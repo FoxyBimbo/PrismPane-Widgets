@@ -1,0 +1,56 @@
+<Window x:Class="EchoUI.Views.TitleBarWidget"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Title Bar" Width="700" Height="36"
+        WindowStyle="None" AllowsTransparency="True"
+        Background="Transparent" Topmost="False"
+        ShowInTaskbar="False" ResizeMode="NoResize"
+        >
+    <Grid>
+        <Border x:Name="RootBorder" Background="{DynamicResource WindowBackgroundBrush}"
+                BorderBrush="{DynamicResource AccentBrush}" BorderThickness="0,0,0,1">
+            <Grid Margin="8,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Button x:Name="BtnAppMenu" Grid.Column="0" Content="App ▾"
+                        Click="BtnAppMenu_Click"
+                        Padding="8,2" Margin="0,0,8,0"
+                        Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource ForegroundBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}" Cursor="Hand">
+                    <Button.ContextMenu>
+                        <ContextMenu x:Name="AppMenu">
+                            <MenuItem Header="Force Close" Click="ForceClose_Click"/>
+                            <MenuItem Header="Properties" Click="ShowProperties_Click"/>
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+
+                <TextBlock x:Name="TxtActiveApp" Grid.Column="1"
+                           Text="No active app" VerticalAlignment="Center"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="{DynamicResource ForegroundBrush}"
+                           TextTrimming="CharacterEllipsis"/>
+
+                <Button Grid.Column="2" Content="⚙"
+                        Click="BtnSettings_Click"
+                        Width="24" Height="22" Margin="8,0,4,0"
+                        Background="Transparent" Foreground="{DynamicResource MutedForegroundBrush}"
+                        BorderBrush="Transparent" Cursor="Hand"
+                        ToolTip="Settings"/>
+
+                <Button Grid.Column="3" Content="✕"
+                        Click="BtnClose_Click"
+                        Width="24" Height="22"
+                        Background="Transparent" Foreground="{DynamicResource MutedForegroundBrush}"
+                        BorderBrush="Transparent" Cursor="Hand"
+                        ToolTip="Close"/>
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>

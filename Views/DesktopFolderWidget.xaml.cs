@@ -51,6 +51,10 @@ public partial class DesktopFolderWidget : Window
     private bool _isResizing;
     private System.Windows.Point _resizeStart;
     private int _resizeOriginalThickness;
+    private bool _isFloatingResizing;
+    private System.Windows.Point _floatingResizeStart;
+    private double _floatingResizeStartWidth;
+    private double _floatingResizeStartHeight;
 
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -424,6 +428,41 @@ public partial class DesktopFolderWidget : Window
     {
         _isResizing = false;
         ((Border)sender).ReleaseMouseCapture();
+    }
+
+    private void FloatingResizeGrip_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (_isDocked || e.LeftButton != MouseButtonState.Pressed)
+            return;
+
+        _isFloatingResizing = true;
+        _floatingResizeStart = PointToScreen(e.GetPosition(this));
+        _floatingResizeStartWidth = Width;
+        _floatingResizeStartHeight = Height;
+        Mouse.Capture((IInputElement)sender);
+        e.Handled = true;
+    }
+
+    private void FloatingResizeGrip_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (!_isFloatingResizing || _isDocked || e.LeftButton != MouseButtonState.Pressed)
+            return;
+
+        var current = PointToScreen(e.GetPosition(this));
+        var dx = current.X - _floatingResizeStart.X;
+        var dy = current.Y - _floatingResizeStart.Y;
+        Width = Math.Max(220, _floatingResizeStartWidth + dx);
+        Height = Math.Max(180, _floatingResizeStartHeight + dy);
+    }
+
+    private void FloatingResizeGrip_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_isFloatingResizing)
+            return;
+
+        _isFloatingResizing = false;
+        Mouse.Capture(null);
+        e.Handled = true;
     }
 
     // ── Edge highlighting ───────────────────────────────────

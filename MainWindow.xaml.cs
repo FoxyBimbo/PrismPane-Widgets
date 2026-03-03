@@ -21,7 +21,6 @@ public partial class MainWindow : Window
     private readonly ScriptEngine _scriptEngine;
     private readonly ObservableCollection<AppNotification> _notifications = [];
     private readonly System.Windows.Forms.NotifyIcon _trayIcon;
-    private readonly FullscreenWatcher _fullscreenWatcher;
     private readonly DispatcherTimer _settingsSaveTimer;
     private bool _widgetsRestored;
     private bool _isRestoringWidgetsState;
@@ -42,14 +41,6 @@ public partial class MainWindow : Window
 
         var api = new TaskbarScriptApi(AddNotification, (_, _) => { });
         _scriptEngine.ExposeApi("echo", api);
-
-        // ── Fullscreen watcher ──────────────────────────────
-        _fullscreenWatcher = new FullscreenWatcher();
-        _fullscreenWatcher.FullscreenEntered += () =>
-            Dispatcher.Invoke(() => DockManager.SetFullscreenMode(true));
-        _fullscreenWatcher.FullscreenExited += () =>
-            Dispatcher.Invoke(() => DockManager.SetFullscreenMode(false));
-        _fullscreenWatcher.Start();
 
         _settingsSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         _settingsSaveTimer.Tick += (_, _) =>
@@ -115,7 +106,6 @@ public partial class MainWindow : Window
 
     private void MainWindow_Closed(object? sender, EventArgs e)
     {
-        _fullscreenWatcher.Dispose();
         CloseAllWidgets();
         _trayIcon.Visible = false;
         _trayIcon.Dispose();
@@ -130,7 +120,14 @@ public partial class MainWindow : Window
     private void SpawnWidget(string kind)
     {
         var normalizedKind = NormalizeWidgetKind(kind);
+
+        if (normalizedKind == "TitleBar" && TryActivateExistingTitleBar())
+            return;
+
         var (id, ws) = _settings.CreateWidgetInstance(normalizedKind);
+        if (normalizedKind == "TitleBar")
+            EnsureTitleBarDefaults(ws);
+
         ws.IsOpen = true;
         OpenWidget(id, ws);
         _settings.Save();
@@ -145,13 +142,33 @@ public partial class MainWindow : Window
     private void OpenWidget(string id, WidgetSettings ws)
     {
         var normalizedKind = NormalizeWidgetKind(ws.Kind);
-        Window widget = normalizedKind switch
+
+        if (normalizedKind == "TitleBar")
+        {
+            if (TryActivateExistingTitleBar())
+            {
+                _settings.RemoveWidgetInstance(id);
+                _settings.Save();
+                return;
+            }
+
+            EnsureTitleBarDefaults(ws);
+        }
+
+        Window? widget = normalizedKind switch
         {
             "ShortcutPanel" => new ShortcutPanelWidget(id, ws, _settings),
-            "FullScreenShell" => new FullScreenShellWidget(id, ws, _settings),
             "Folder" => new DesktopFolderWidget(id, ws, _settings),
-            _ => new DesktopFolderWidget(id, ws, _settings)
+            "TitleBar" => new TitleBarWidget(id, ws, _settings),
+            "Clock" => new ClockWidget(id, ws, _settings),
+            "CpuMonitor" => new CpuMonitorWidget(id, ws, _settings),
+            "RamMonitor" => new RamMonitorWidget(id, ws, _settings),
+            "Weather" => new WeatherWidget(id, ws, _settings),
+            _ => null
         };
+
+        if (widget is null)
+            return;
 
         RegisterWidget(id, widget);
         ApplyWidgetPlacement(id, ws, widget);
@@ -233,6 +250,28 @@ public partial class MainWindow : Window
         DockManager.TrackFloatingWidget(widget);
     }
 
+    private static void EnsureTitleBarDefaults(WidgetSettings ws)
+    {
+        var height = ws.Height is > 0 ? ws.Height.Value : 36;
+        ws.Height = height;
+        ws.DockEdge = DockEdge.Top;
+        ws.DockThickness = height;
+        ws.Top = 0;
+    }
+
+    private bool TryActivateExistingTitleBar()
+    {
+        var existing = _widgets.Values.OfType<TitleBarWidget>().FirstOrDefault();
+        if (existing is null)
+            return false;
+
+        if (existing.WindowState == WindowState.Minimized)
+            existing.WindowState = WindowState.Normal;
+
+        existing.Activate();
+        return true;
+    }
+
     private void ApplyWidgetPlacement(string id, WidgetSettings ws, Window widget)
     {
         if (ws.Width is > 0)
@@ -250,22 +289,32 @@ public partial class MainWindow : Window
 
         widget.SourceInitialized += (_, _) =>
         {
-            if (ws.DockEdge == DockEdge.None)
-                return;
-
+            var edge = ws.DockEdge;
             var thickness = ws.DockThickness ?? (ws.DockEdge is DockEdge.Left or DockEdge.Right
                 ? widget.Width
                 : widget.Height);
+
+            if (widget is TitleBarWidget)
+            {
+                edge = DockEdge.Top;
+                thickness = widget.Height > 0 ? widget.Height : (ws.Height ?? 36);
+                ws.DockEdge = edge;
+                ws.DockThickness = thickness;
+            }
+
+            if (edge == DockEdge.None)
+                return;
+
             switch (widget)
             {
                 case DesktopFolderWidget folderWidget:
-                    folderWidget.RestoreDock(ws.DockEdge, thickness);
+                    folderWidget.RestoreDock(edge, thickness);
                     break;
                 case ShortcutPanelWidget shortcutWidget:
-                    shortcutWidget.RestoreDock(ws.DockEdge, thickness);
+                    shortcutWidget.RestoreDock(edge, thickness);
                     break;
                 default:
-                    DockManager.Dock(id, widget, ws.DockEdge, thickness);
+                    DockManager.Dock(id, widget, edge, thickness);
                     break;
             }
         };
@@ -301,7 +350,11 @@ public partial class MainWindow : Window
         {
             DesktopFolderWidget dfw => dfw.WidgetId,
             ShortcutPanelWidget spw => spw.WidgetId,
-            FullScreenShellWidget fsw => fsw.WidgetId,
+            TitleBarWidget tbw => tbw.WidgetId,
+            ClockWidget cw => cw.WidgetId,
+            CpuMonitorWidget cmw => cmw.WidgetId,
+            RamMonitorWidget rmw => rmw.WidgetId,
+            WeatherWidget ww => ww.WidgetId,
             _ => null
         };
         if (id is null) return;
@@ -367,30 +420,6 @@ public partial class MainWindow : Window
         GC.Collect(2, GCCollectionMode.Aggressive, true, true);
     }
 
-    // ── Plugins ─────────────────────────────────────────────
-    private void RunPlugins()
-    {
-        foreach (var plugin in _extManager.GetPlugins())
-        {
-            var code = _extManager.ReadScript(plugin);
-            var result = _scriptEngine.Run(code, plugin.ScriptType);
-            if (!result.Success)
-                AddNotification($"Plugin Error: {plugin.Name}", result.Error ?? "Unknown error");
-        }
-    }
-
-    // ── Notifications ───────────────────────────────────────
-    private void ShowNotifications()
-    {
-        var screen = System.Windows.Forms.Screen.PrimaryScreen!.WorkingArea;
-        var panel = new NotificationPanel(_notifications)
-        {
-            Left = screen.Right - 350,
-            Top = screen.Bottom - 410
-        };
-        panel.Show();
-    }
-
     private void AddNotification(string title, string message)
     {
         Dispatcher.Invoke(() =>
@@ -423,15 +452,23 @@ public partial class MainWindow : Window
     {
         var menu = new System.Windows.Forms.ContextMenuStrip();
 
-        foreach (var widget in _extManager.GetWidgets())
+        var builtinWidgets = new HashSet<string>(["Folder", "ShortcutPanel", "TitleBar", "Clock", "CpuMonitor", "RamMonitor", "Weather"], StringComparer.OrdinalIgnoreCase);
+        foreach (var kind in builtinWidgets)
+            menu.Items.Add($"New {kind} Widget", null, (_, _) => SpawnWidget(kind));
+
+        var extensionWidgets = _extManager.GetWidgets()
+            .Where(w => !builtinWidgets.Contains(w.Name))
+            .ToList();
+
+        if (builtinWidgets.Count > 0 && extensionWidgets.Count > 0)
+            menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
+
+        foreach (var widget in extensionWidgets)
             menu.Items.Add($"New {widget.Name} Widget", null, (_, _) => SpawnWidget(widget.Name));
 
         if (menu.Items.Count > 0)
             menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
 
-        menu.Items.Add("Run Plugins", null, (_, _) => RunPlugins());
-        menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
-        menu.Items.Add("Notifications", null, (_, _) => ShowNotifications());
         menu.Items.Add("Settings", null, (_, _) => OpenSettings());
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) => ExitApp());

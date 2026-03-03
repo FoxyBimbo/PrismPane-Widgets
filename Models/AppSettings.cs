@@ -72,11 +72,80 @@ public class AppSettings
                 Opacity = 1.0,
                 Custom = new() { ["Title"] = "Shortcuts" }
             },
-            "FullScreenShell" => new WidgetSettings
+            "TitleBar" => new WidgetSettings
             {
-                Kind = "FullScreenShell",
+                Kind = "TitleBar",
                 Topmost = false,
-                Opacity = 1.0
+                Opacity = 1.0,
+                Height = 36,
+                DockEdge = DockEdge.Top,
+                DockThickness = 36
+            },
+            "Clock" => new WidgetSettings
+            {
+                Kind = "Clock",
+                Topmost = false,
+                Opacity = 1.0,
+                Width = 220,
+                Height = 220,
+                Custom = new()
+                {
+                    ["ClockMode"] = "Digital",
+                    ["ClockHourColor"] = "#FFE5E7EB",
+                    ["ClockMinuteColor"] = "#FF93C5FD",
+                    ["ClockSecondColor"] = "#FFFCA5A5"
+                }
+            },
+            "CpuMonitor" => new WidgetSettings
+            {
+                Kind = "CpuMonitor",
+                Topmost = false,
+                Opacity = 1.0,
+                Width = 260,
+                Height = 220,
+                Custom = new()
+                {
+                    ["CpuViewMode"] = "Bar",
+                    ["CpuLowColor"] = "#FF34D399",
+                    ["CpuMediumColor"] = "#FFFBBF24",
+                    ["CpuHighColor"] = "#FFF87171"
+                }
+            },
+            "RamMonitor" => new WidgetSettings
+            {
+                Kind = "RamMonitor",
+                Topmost = false,
+                Opacity = 1.0,
+                Width = 260,
+                Height = 220,
+                Custom = new()
+                {
+                    ["RamViewMode"] = "Bar",
+                    ["RamLowColor"] = "#FF34D399",
+                    ["RamMediumColor"] = "#FFFBBF24",
+                    ["RamHighColor"] = "#FFF87171"
+                }
+            },
+            "Weather" => new WidgetSettings
+            {
+                Kind = "Weather",
+                Topmost = false,
+                Opacity = 1.0,
+                Width = 280,
+                Height = 260,
+                Custom = new()
+                {
+                    ["WeatherLocation"] = "New York City, New York, USA",
+                    ["WeatherLatitude"] = "40.7128",
+                    ["WeatherLongitude"] = "-74.0060",
+                    ["WeatherForecastDays"] = "1",
+                    ["WeatherTemperatureUnit"] = "celsius",
+                    ["WeatherFreezeColor"] = "#FF60A5FA",
+                    ["WeatherCoolColor"] = "#FF22D3EE",
+                    ["WeatherWarmColor"] = "#FFFACC15",
+                    ["WeatherHotColor"] = "#FFFB923C",
+                    ["WeatherExtremeColor"] = "#FFEF4444"
+                }
             },
             _ => new WidgetSettings { Kind = kind }
         };

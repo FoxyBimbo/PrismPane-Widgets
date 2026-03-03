@@ -96,7 +96,22 @@
             </Grid>
         </Border>
 
+        <Border x:Name="DockResizeGrip" Visibility="Collapsed"
+                Background="Transparent" Width="6"
+                HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                Cursor="SizeWE"
+                MouseLeftButtonDown="ResizeGrip_MouseDown"
+                MouseMove="ResizeGrip_MouseMove"
+                MouseLeftButtonUp="ResizeGrip_MouseUp">
+            <Border Background="#40FFFFFF" Width="2" CornerRadius="1"
+                    VerticalAlignment="Center" Height="40"
+                    HorizontalAlignment="Center"/>
+        </Border>
+
         <ResizeGrip x:Name="FloatingResizeGrip" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                    Width="14" Height="14" Margin="0,0,6,6"/>
+                    Width="14" Height="14" Margin="0,0,6,6"
+                    PreviewMouseLeftButtonDown="FloatingResizeGrip_PreviewMouseLeftButtonDown"
+                    PreviewMouseMove="FloatingResizeGrip_PreviewMouseMove"
+                    PreviewMouseLeftButtonUp="FloatingResizeGrip_PreviewMouseLeftButtonUp"/>
     </Grid>
 </Window>

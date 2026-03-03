@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -31,6 +32,20 @@ public partial class ShortcutPanelWidget : Window
     private const int AutoDockThreshold = 2;
     private bool _defaultTopmost;
     private readonly DispatcherTimer _minimizeTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+    private bool _isResizing;
+    private System.Windows.Point _resizeStart;
+    private int _resizeOriginalThickness;
+    private bool _isFloatingResizing;
+    private System.Windows.Point _floatingResizeStart;
+    private double _floatingResizeStartWidth;
+    private double _floatingResizeStartHeight;
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetCursorPos(out POINT lpPoint);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT { public int x, y; }
 
     public string WidgetId => _widgetId;
     public void RestoreDock(DockEdge edge, double thickness)
@@ -329,6 +344,7 @@ public partial class ShortcutPanelWidget : Window
 
         MainWindow.DockManager.Dock(WidgetId, this, edge, thickness);
         HighlightActiveEdge(edge);
+        ShowResizeGrip(edge);
         FloatingResizeGrip.Visibility = Visibility.Collapsed;
     }
 
@@ -362,7 +378,120 @@ public partial class ShortcutPanelWidget : Window
             Top = (screen.Height - Height) / 2;
         }
         HighlightActiveEdge(DockEdge.None);
+        DockResizeGrip.Visibility = Visibility.Collapsed;
         FloatingResizeGrip.Visibility = Visibility.Visible;
+    }
+
+    private void ShowResizeGrip(DockEdge edge)
+    {
+        DockResizeGrip.Visibility = Visibility.Visible;
+
+        switch (edge)
+        {
+            case DockEdge.Left:
+                DockResizeGrip.HorizontalAlignment = System.Windows.HorizontalAlignment.Right;
+                DockResizeGrip.VerticalAlignment = VerticalAlignment.Stretch;
+                DockResizeGrip.Width = 6;
+                DockResizeGrip.Height = double.NaN;
+                DockResizeGrip.Cursor = System.Windows.Input.Cursors.SizeWE;
+                break;
+            case DockEdge.Right:
+                DockResizeGrip.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
+                DockResizeGrip.VerticalAlignment = VerticalAlignment.Stretch;
+                DockResizeGrip.Width = 6;
+                DockResizeGrip.Height = double.NaN;
+                DockResizeGrip.Cursor = System.Windows.Input.Cursors.SizeWE;
+                break;
+            case DockEdge.Top:
+                DockResizeGrip.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
+                DockResizeGrip.VerticalAlignment = VerticalAlignment.Bottom;
+                DockResizeGrip.Width = double.NaN;
+                DockResizeGrip.Height = 6;
+                DockResizeGrip.Cursor = System.Windows.Input.Cursors.SizeNS;
+                break;
+            case DockEdge.Bottom:
+                DockResizeGrip.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
+                DockResizeGrip.VerticalAlignment = VerticalAlignment.Top;
+                DockResizeGrip.Width = double.NaN;
+                DockResizeGrip.Height = 6;
+                DockResizeGrip.Cursor = System.Windows.Input.Cursors.SizeNS;
+                break;
+        }
+    }
+
+    private void ResizeGrip_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (!_isDocked || e.LeftButton != MouseButtonState.Pressed) return;
+        _isResizing = true;
+        if (!GetCursorPos(out var pt))
+            return;
+        _resizeStart = new System.Windows.Point(pt.x, pt.y);
+        _resizeOriginalThickness = MainWindow.DockManager.DipToPixel(
+            _currentEdge is DockEdge.Left or DockEdge.Right ? ActualWidth : ActualHeight);
+        ((Border)sender).CaptureMouse();
+    }
+
+    private void ResizeGrip_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (!_isResizing) return;
+
+        if (!GetCursorPos(out var pt))
+            return;
+        int dx = pt.x - (int)_resizeStart.X;
+        int dy = pt.y - (int)_resizeStart.Y;
+
+        int newThickness = _currentEdge switch
+        {
+            DockEdge.Left => _resizeOriginalThickness + dx,
+            DockEdge.Right => _resizeOriginalThickness - dx,
+            DockEdge.Top => _resizeOriginalThickness + dy,
+            DockEdge.Bottom => _resizeOriginalThickness - dy,
+            _ => _resizeOriginalThickness
+        };
+
+        if (newThickness < 150) newThickness = 150;
+        MainWindow.DockManager.Resize(WidgetId, newThickness);
+    }
+
+    private void ResizeGrip_MouseUp(object sender, MouseButtonEventArgs e)
+    {
+        _isResizing = false;
+        ((Border)sender).ReleaseMouseCapture();
+    }
+
+    private void FloatingResizeGrip_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (_isDocked || e.LeftButton != MouseButtonState.Pressed)
+            return;
+
+        _isFloatingResizing = true;
+        _floatingResizeStart = PointToScreen(e.GetPosition(this));
+        _floatingResizeStartWidth = Width;
+        _floatingResizeStartHeight = Height;
+        Mouse.Capture((IInputElement)sender);
+        e.Handled = true;
+    }
+
+    private void FloatingResizeGrip_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (!_isFloatingResizing || _isDocked || e.LeftButton != MouseButtonState.Pressed)
+            return;
+
+        var current = PointToScreen(e.GetPosition(this));
+        var dx = current.X - _floatingResizeStart.X;
+        var dy = current.Y - _floatingResizeStart.Y;
+        Width = Math.Max(200, _floatingResizeStartWidth + dx);
+        Height = Math.Max(160, _floatingResizeStartHeight + dy);
+    }
+
+    private void FloatingResizeGrip_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_isFloatingResizing)
+            return;
+
+        _isFloatingResizing = false;
+        Mouse.Capture(null);
+        e.Handled = true;
     }
 
     private void HighlightActiveEdge(DockEdge edge)

@@ -9,6 +9,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -137,62 +138,6 @@
                     </StackPanel>
                 </StackPanel>
 
-                <StackPanel x:Name="PanelExtensions">
-                    <!-- ── Extensions ──────────────────────────────── -->
-                    <TextBlock Text="Extensions (Plugin &amp; Widget Scripts)" FontSize="18" FontWeight="Bold" Margin="0,16,0,8"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <Button x:Name="BtnImportPlugin" Content="+ Plugin" ToolTip="Import a plugin script" Click="BtnImportPlugin_Click"
-                                Padding="10,6" Margin="0,0,4,0" Background="{DynamicResource AccentBrush}" Foreground="White" BorderBrush="Transparent"/>
-                        <Button x:Name="BtnImportWidget" Content="+ Widget" ToolTip="Import a widget script" Click="BtnImportWidget_Click"
-                                Padding="10,6" Margin="0,0,4,0" Background="{DynamicResource AccentBrush}" Foreground="White" BorderBrush="Transparent"/>
-                        <Button Content="&#x1F4C1; Plugins" Click="BtnShowPluginFolder_Click"
-                                Padding="10,6" Margin="0,0,4,0"
-                                Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource MutedForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"
-                                ToolTip="Open Plugin scripts folder in Explorer"/>
-                        <Button Content="&#x1F4C1; Scripts" Click="BtnShowWidgetFolder_Click"
-                                Padding="10,6"
-                                Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource MutedForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"
-                                ToolTip="Open Widget scripts folder in Explorer"/>
-                    </StackPanel>
-
-                    <ListBox x:Name="LstExtensions" Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource ForegroundBrush}"
-                             BorderBrush="{DynamicResource BorderBrush}" Margin="0,4,0,0" MaxHeight="120">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <CheckBox IsChecked="{Binding IsEnabled}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                    <TextBlock VerticalAlignment="Center">
-                                        <Run Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold"/>
-                                        <Run Text=" (" /><Run Text="{Binding Kind, Mode=OneWay}"/>
-                                        <Run Text=", "/><Run Text="{Binding ScriptType, Mode=OneWay}"/><Run Text=")"/>
-                                    </TextBlock>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </StackPanel>
-
-                <StackPanel x:Name="PanelAddWidgets">
-                    <!-- ── Add Widgets ──────────────────────────────── -->
-                    <TextBlock Text="Add Widgets" FontSize="18" FontWeight="Bold" Margin="0,16,0,8"/>
-                    <ItemsControl x:Name="LstWidgetTypes">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Content="{Binding Name, StringFormat=Add {0}}"
-                                        Tag="{Binding Name}"
-                                        Click="BtnAddWidget_Click"
-                                        Padding="10,6" Margin="0,0,6,6"
-                                        Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource ForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-
                 <StackPanel x:Name="PanelWidgetSettings">
                     <!-- ── Widget Settings ─────────────────────────── -->
                     <TextBlock Text="Widget Settings" FontSize="18" FontWeight="Bold" Margin="0,16,0,8"/>
@@ -204,6 +149,11 @@
                                   SelectionChanged="CmbWidgetSelect_Changed">
                             <ComboBoxItem Content="Folder" Tag="Folder" IsSelected="True"/>
                             <ComboBoxItem Content="Shortcut Panel" Tag="ShortcutPanel"/>
+                            <ComboBoxItem Content="Title Bar" Tag="TitleBar"/>
+                            <ComboBoxItem Content="Clock" Tag="Clock"/>
+                            <ComboBoxItem Content="CPU Monitor" Tag="CpuMonitor"/>
+                            <ComboBoxItem Content="RAM Monitor" Tag="RamMonitor"/>
+                            <ComboBoxItem Content="Weather" Tag="Weather"/>
                         </ComboBox>
                     </StackPanel>
 
@@ -308,13 +258,223 @@
                                              Padding="4,2" FontSize="11"/>
                                 </StackPanel>
                             </StackPanel>
+
+                            <StackPanel x:Name="PanelClockSettings" Visibility="Collapsed">
+                                <TextBlock Text="Clock Options" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource MutedForegroundBrush}" Margin="0,8,0,6"/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <TextBlock Text="Mode:" VerticalAlignment="Center" Width="100"/>
+                                    <ComboBox x:Name="CmbClockMode" Width="120"
+                                              Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource ForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}">
+                                        <ComboBoxItem Content="Digital"/>
+                                        <ComboBoxItem Content="Analog"/>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Hour color:" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox x:Name="TxtClockHourColor" Width="90" Padding="4,2"
+                                             Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource ForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                    <Button Content="🎨" Width="26" Height="20" Margin="4,0,0,0" Padding="0"
+                                            Click="BtnPickColor_Click" Tag="{Binding ElementName=TxtClockHourColor}"
+                                            Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource MutedForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Minute color:" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox x:Name="TxtClockMinuteColor" Width="90" Padding="4,2"
+                                             Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource ForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                    <Button Content="🎨" Width="26" Height="20" Margin="4,0,0,0" Padding="0"
+                                            Click="BtnPickColor_Click" Tag="{Binding ElementName=TxtClockMinuteColor}"
+                                            Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource MutedForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Second color:" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox x:Name="TxtClockSecondColor" Width="90" Padding="4,2"
+                                             Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource ForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                    <Button Content="🎨" Width="26" Height="20" Margin="4,0,0,0" Padding="0"
+                                            Click="BtnPickColor_Click" Tag="{Binding ElementName=TxtClockSecondColor}"
+                                            Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource MutedForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <StackPanel x:Name="PanelCpuSettings" Visibility="Collapsed">
+                                <TextBlock Text="CPU Monitor Options" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource MutedForegroundBrush}" Margin="0,8,0,6"/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <TextBlock Text="View:" VerticalAlignment="Center" Width="100"/>
+                                    <ComboBox x:Name="CmbCpuViewMode" Width="120"
+                                              Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource ForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}">
+                                        <ComboBoxItem Content="Bar"/>
+                                        <ComboBoxItem Content="Speedometer"/>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Low color:" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox x:Name="TxtCpuLowColor" Width="90" Padding="4,2"
+                                             Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource ForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                    <Button Content="🎨" Width="26" Height="20" Margin="4,0,0,0" Padding="0"
+                                            Click="BtnPickColor_Click" Tag="{Binding ElementName=TxtCpuLowColor}"
+                                            Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource MutedForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Medium color:" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox x:Name="TxtCpuMediumColor" Width="90" Padding="4,2"
+                                             Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource ForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                    <Button Content="🎨" Width="26" Height="20" Margin="4,0,0,0" Padding="0"
+                                            Click="BtnPickColor_Click" Tag="{Binding ElementName=TxtCpuMediumColor}"
+                                            Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource MutedForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="High color:" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox x:Name="TxtCpuHighColor" Width="90" Padding="4,2"
+                                             Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource ForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                    <Button Content="🎨" Width="26" Height="20" Margin="4,0,0,0" Padding="0"
+                                            Click="BtnPickColor_Click" Tag="{Binding ElementName=TxtCpuHighColor}"
+                                            Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource MutedForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <StackPanel x:Name="PanelRamSettings" Visibility="Collapsed">
+                                <TextBlock Text="RAM Monitor Options" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource MutedForegroundBrush}" Margin="0,8,0,6"/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <TextBlock Text="View:" VerticalAlignment="Center" Width="100"/>
+                                    <ComboBox x:Name="CmbRamViewMode" Width="120"
+                                              Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource ForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}">
+                                        <ComboBoxItem Content="Bar"/>
+                                        <ComboBoxItem Content="Speedometer"/>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Low color:" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox x:Name="TxtRamLowColor" Width="90" Padding="4,2"
+                                             Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource ForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                    <Button Content="🎨" Width="26" Height="20" Margin="4,0,0,0" Padding="0"
+                                            Click="BtnPickColor_Click" Tag="{Binding ElementName=TxtRamLowColor}"
+                                            Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource MutedForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Medium color:" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox x:Name="TxtRamMediumColor" Width="90" Padding="4,2"
+                                             Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource ForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                    <Button Content="🎨" Width="26" Height="20" Margin="4,0,0,0" Padding="0"
+                                            Click="BtnPickColor_Click" Tag="{Binding ElementName=TxtRamMediumColor}"
+                                            Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource MutedForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="High color:" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox x:Name="TxtRamHighColor" Width="90" Padding="4,2"
+                                             Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource ForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                    <Button Content="🎨" Width="26" Height="20" Margin="4,0,0,0" Padding="0"
+                                            Click="BtnPickColor_Click" Tag="{Binding ElementName=TxtRamHighColor}"
+                                            Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource MutedForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <StackPanel x:Name="PanelWeatherSettings" Visibility="Collapsed">
+                                <TextBlock Text="Weather Options" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource MutedForegroundBrush}" Margin="0,8,0,6"/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <TextBlock Text="Temp unit:" VerticalAlignment="Center" Width="100"/>
+                                    <ComboBox x:Name="CmbWeatherTempUnit" Width="160">
+                                        <ComboBoxItem Content="Celsius" Tag="celsius"/>
+                                        <ComboBoxItem Content="Fahrenheit" Tag="fahrenheit"/>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <TextBlock Text="Location:" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox x:Name="TxtWeatherLocation" Width="230" Padding="4,2"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Forecast:" VerticalAlignment="Center" Width="100"/>
+                                    <ComboBox x:Name="CmbWeatherForecastMode" Width="160">
+                                        <ComboBoxItem Content="1 Day Forecast" Tag="1"/>
+                                        <ComboBoxItem Content="3 Day Forecast" Tag="3"/>
+                                        <ComboBoxItem Content="7 Day Forecast" Tag="7"/>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Freezing (&lt;0°C):" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox x:Name="TxtWeatherFreezeColor" Width="90" Padding="4,2"/>
+                                    <Button Content="🎨" Width="26" Height="20" Margin="4,0,0,0" Padding="0"
+                                            Click="BtnPickColor_Click" Tag="{Binding ElementName=TxtWeatherFreezeColor}"
+                                            ToolTip="Pick color"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Cool:" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox x:Name="TxtWeatherCoolColor" Width="90" Padding="4,2"/>
+                                    <Button Content="🎨" Width="26" Height="20" Margin="4,0,0,0" Padding="0"
+                                            Click="BtnPickColor_Click" Tag="{Binding ElementName=TxtWeatherCoolColor}"
+                                            ToolTip="Pick color"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Warm:" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox x:Name="TxtWeatherWarmColor" Width="90" Padding="4,2"/>
+                                    <Button Content="🎨" Width="26" Height="20" Margin="4,0,0,0" Padding="0"
+                                            Click="BtnPickColor_Click" Tag="{Binding ElementName=TxtWeatherWarmColor}"
+                                            ToolTip="Pick color"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Hot:" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox x:Name="TxtWeatherHotColor" Width="90" Padding="4,2"/>
+                                    <Button Content="🎨" Width="26" Height="20" Margin="4,0,0,0" Padding="0"
+                                            Click="BtnPickColor_Click" Tag="{Binding ElementName=TxtWeatherHotColor}"
+                                            ToolTip="Pick color"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Extreme hot:" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox x:Name="TxtWeatherExtremeColor" Width="90" Padding="4,2"/>
+                                    <Button Content="🎨" Width="26" Height="20" Margin="4,0,0,0" Padding="0"
+                                            Click="BtnPickColor_Click" Tag="{Binding ElementName=TxtWeatherExtremeColor}"
+                                            ToolTip="Pick color"/>
+                                </StackPanel>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+        <StackPanel x:Name="PanelAddWidgets" Grid.Row="1" Margin="0,12,0,0">
+            <TextBlock Text="Add Widgets" FontSize="18" FontWeight="Bold" Margin="0,0,0,8"/>
+            <ItemsControl x:Name="LstWidgetTypes">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Content="{Binding Name, StringFormat=Add {0}}"
+                                Tag="{Binding Name}"
+                                Click="BtnAddWidget_Click"
+                                Padding="10,6" Margin="0,0,6,6"
+                                Background="{DynamicResource ControlBackgroundBrush}" Foreground="{DynamicResource ForegroundBrush}" BorderBrush="{DynamicResource BorderBrush}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button Content="Save" Click="BtnSave_Click" Padding="20,8" Margin="0,0,8,0"
                     Background="{DynamicResource AccentBrush}" Foreground="White" BorderBrush="Transparent"/>
             <Button Content="Apply" Click="BtnApply_Click" Padding="20,8" Margin="0,0,8,0"
