@@ -36,6 +36,7 @@ public partial class SettingsWindow : Window
     private const string WeatherWarmColorKey = "WeatherWarmColor";
     private const string WeatherHotColorKey = "WeatherHotColor";
     private const string WeatherExtremeColorKey = "WeatherExtremeColor";
+    private const string VideoBackgroundSourcePathKey = "VideoBackgroundSourcePath";
 
     private static readonly HttpClient GeocodeHttpClient = CreateGeocodeHttpClient();
 
@@ -45,12 +46,18 @@ public partial class SettingsWindow : Window
     private readonly WidgetSettings? _widgetSettingsOverride;
     private readonly Action? _widgetSettingsApplied;
     private readonly Action<string>? _spawnWidget;
+    private readonly Func<IReadOnlyList<ActiveWidgetListItem>>? _getActiveWidgets;
+    private readonly Action<string>? _closeWidget;
+    private readonly Action<string>? _openWidgetSettings;
+    private readonly Action<string>? _resetWidgetLocation;
     private readonly Action? _settingsApplied;
     private bool _loading = true;
 
     public SettingsWindow(AppSettings settings, ExtensionManager? extManager, string? widgetIdOverride = null,
         WidgetSettings? widgetSettingsOverride = null, Action? widgetSettingsApplied = null,
-        Action<string>? spawnWidget = null, Action? settingsApplied = null)
+        Action<string>? spawnWidget = null, Func<IReadOnlyList<ActiveWidgetListItem>>? getActiveWidgets = null,
+        Action<string>? closeWidget = null, Action<string>? openWidgetSettings = null,
+        Action<string>? resetWidgetLocation = null, Action? settingsApplied = null)
     {
         _settings = settings;
         _extManager = extManager;
@@ -58,8 +65,13 @@ public partial class SettingsWindow : Window
         _widgetSettingsOverride = widgetSettingsOverride;
         _widgetSettingsApplied = widgetSettingsApplied;
         _spawnWidget = spawnWidget;
+        _getActiveWidgets = getActiveWidgets;
+        _closeWidget = closeWidget;
+        _openWidgetSettings = openWidgetSettings;
+        _resetWidgetLocation = resetWidgetLocation;
         _settingsApplied = settingsApplied;
         InitializeComponent();
+        Activated += (_, _) => RefreshActiveWidgets();
         LoadSettings();
     }
 
@@ -79,6 +91,7 @@ public partial class SettingsWindow : Window
         LoadCustomThemeFields();
 
         ConfigureSectionVisibility();
+        RefreshActiveWidgets();
         LoadWidgetTypes();
         if (_widgetIdOverride is not null)
         {
@@ -100,6 +113,7 @@ public partial class SettingsWindow : Window
             PanelWidgetSettings.Visibility = Visibility.Visible;
             PanelWidgetSelector.Visibility = Visibility.Collapsed;
             PanelAddWidgets.Visibility = Visibility.Collapsed;
+            PanelActiveWidgets.Visibility = Visibility.Collapsed;
             return;
         }
 
@@ -107,6 +121,27 @@ public partial class SettingsWindow : Window
         PanelThemeSettings.Visibility = Visibility.Visible;
         PanelGeneralSettings.Visibility = Visibility.Visible;
         PanelAddWidgets.Visibility = _extManager is null ? Visibility.Collapsed : Visibility.Visible;
+        PanelActiveWidgets.Visibility = _getActiveWidgets is null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void RefreshActiveWidgets()
+    {
+        if (LstActiveWidgets is null)
+            return;
+
+        if (_widgetIdOverride is not null || _getActiveWidgets is null)
+        {
+            LstActiveWidgets.ItemsSource = null;
+            TxtNoActiveWidgets.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        var activeWidgets = _getActiveWidgets()
+            .OrderBy(widget => widget.DisplayName, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+
+        LstActiveWidgets.ItemsSource = activeWidgets;
+        TxtNoActiveWidgets.Visibility = activeWidgets.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void LoadWidgetTypes()
@@ -125,7 +160,9 @@ public partial class SettingsWindow : Window
             new ExtensionInfo { Name = "Clock", Kind = ExtensionKind.Widget, IsEnabled = true },
             new ExtensionInfo { Name = "CpuMonitor", Kind = ExtensionKind.Widget, IsEnabled = true },
             new ExtensionInfo { Name = "RamMonitor", Kind = ExtensionKind.Widget, IsEnabled = true },
-            new ExtensionInfo { Name = "Weather", Kind = ExtensionKind.Widget, IsEnabled = true }
+            new ExtensionInfo { Name = "Weather", Kind = ExtensionKind.Widget, IsEnabled = true },
+            new ExtensionInfo { Name = "Video Widget", Kind = ExtensionKind.Widget, IsEnabled = true },
+            new ExtensionInfo { Name = "Media Control", Kind = ExtensionKind.Widget, IsEnabled = true }
         };
 
         var scripted = _extManager.Extensions
@@ -300,6 +337,8 @@ public partial class SettingsWindow : Window
     {
         "CPU Monitor" => "CpuMonitor",
         "RAM Monitor" => "RamMonitor",
+        "Video Widget" => "VideoBackground",
+        "Media Control" => "MediaControl",
         _ => NormalizeWidgetKind(kind)
     };
 
@@ -336,6 +375,7 @@ public partial class SettingsWindow : Window
         PanelCpuSettings.Visibility = kind == "CpuMonitor" ? Visibility.Visible : Visibility.Collapsed;
         PanelRamSettings.Visibility = kind == "RamMonitor" ? Visibility.Visible : Visibility.Collapsed;
         PanelWeatherSettings.Visibility = kind == "Weather" ? Visibility.Visible : Visibility.Collapsed;
+        PanelVideoBackgroundSettings.Visibility = kind == "VideoBackground" ? Visibility.Visible : Visibility.Collapsed;
 
         if (kind == "Folder")
         {
@@ -367,6 +407,9 @@ public partial class SettingsWindow : Window
 
         if (kind == "Weather")
             LoadWeatherFields(ws);
+
+        if (kind == "VideoBackground")
+            LoadVideoBackgroundFields(ws);
 
         _loading = false;
     }
@@ -451,6 +494,13 @@ public partial class SettingsWindow : Window
         TxtWcBorder.Text = c.Border;
         TxtWcMuted.Text = c.MutedForeground;
         PanelWidgetColors.Visibility = ws.CustomColors is not null ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void LoadVideoBackgroundFields(WidgetSettings ws)
+    {
+        TxtVideoBackgroundPath.Text = ws.Custom.TryGetValue(VideoBackgroundSourcePathKey, out var savedPath)
+            ? savedPath
+            : string.Empty;
     }
 
     private ThemeColors? ReadWidgetColorFields()
@@ -585,6 +635,11 @@ public partial class SettingsWindow : Window
             }
         }
 
+        if (kind == "VideoBackground")
+        {
+            ws.Custom[VideoBackgroundSourcePathKey] = TxtVideoBackgroundPath.Text.Trim();
+        }
+
         if (_widgetSettingsOverride is not null && _widgetIdOverride is not null)
             _settings.Widgets[_widgetIdOverride] = ws;
     }
@@ -592,11 +647,85 @@ public partial class SettingsWindow : Window
     private void BtnAddWidget_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.Tag is string widgetType)
+        {
             _spawnWidget?.Invoke(NormalizeSpawnWidgetKind(widgetType));
+            RefreshActiveWidgets();
+        }
+    }
+
+    private void BtnCloseActiveWidget_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string widgetId)
+        {
+            _closeWidget?.Invoke(widgetId);
+            RefreshActiveWidgets();
+        }
+    }
+
+    private void LstActiveWidgets_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (_openWidgetSettings is null)
+            return;
+
+        if (e.OriginalSource is DependencyObject source && FindAncestor<Button>(source) is not null)
+            return;
+
+        if (LstActiveWidgets.SelectedItem is ActiveWidgetListItem widget)
+            _openWidgetSettings(widget.Id);
+    }
+
+    private void LstActiveWidgets_PreviewMouseRightButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (e.OriginalSource is not DependencyObject source)
+            return;
+
+        var listBoxItem = FindAncestor<ListBoxItem>(source);
+        if (listBoxItem?.Content is not ActiveWidgetListItem widget)
+            return;
+
+        var menu = new System.Windows.Controls.ContextMenu();
+
+        var settingsItem = new System.Windows.Controls.MenuItem { Header = "Settings" };
+        settingsItem.Click += (_, _) => _openWidgetSettings?.Invoke(widget.Id);
+        menu.Items.Add(settingsItem);
+
+        var resetItem = new System.Windows.Controls.MenuItem { Header = "Reset Location" };
+        resetItem.Click += (_, _) => _resetWidgetLocation?.Invoke(widget.Id);
+        menu.Items.Add(resetItem);
+
+        menu.PlacementTarget = listBoxItem;
+        menu.IsOpen = true;
+        e.Handled = true;
+    }
+
+    private static T? FindAncestor<T>(DependencyObject? source)
+        where T : DependencyObject
+    {
+        while (source is not null)
+        {
+            if (source is T match)
+                return match;
+
+            source = VisualTreeHelper.GetParent(source);
+        }
+
+        return null;
     }
 
     private WidgetSettings ResolveWidgetSettings(string widgetId) =>
         _widgetSettingsOverride ?? _settings.GetWidgetSettings(widgetId);
+
+    private void BtnBrowseVideoBackground_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Filter = "Media files (*.mp4;*.avi;*.mov;*.wmv;*.mkv;*.webm;*.gif)|*.mp4;*.avi;*.mov;*.wmv;*.mkv;*.webm;*.gif|All files (*.*)|*.*",
+            Title = "Select a video or GIF for Video Widget"
+        };
+
+        if (dialog.ShowDialog() == true)
+            TxtVideoBackgroundPath.Text = dialog.FileName;
+    }
 
     // ── Save / Close ────────────────────────────────────────
     private void BtnSave_Click(object sender, RoutedEventArgs e)

@@ -51,10 +51,8 @@ public partial class DesktopFolderWidget : Window
     private bool _isResizing;
     private System.Windows.Point _resizeStart;
     private int _resizeOriginalThickness;
-    private bool _isFloatingResizing;
-    private System.Windows.Point _floatingResizeStart;
-    private double _floatingResizeStartWidth;
-    private double _floatingResizeStartHeight;
+    private bool _isExpandedUpward;
+    private double _preHoverExpandTop;
 
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -104,7 +102,7 @@ public partial class DesktopFolderWidget : Window
         return _widgetSettings;
     }
 
-    private void ApplyWidgetSettingsFromModel()
+    public void ApplyWidgetSettingsFromModel()
     {
         var ws = SyncWidgetSettings();
         var previousMinimized = _isMinimized;
@@ -236,11 +234,34 @@ public partial class DesktopFolderWidget : Window
         {
             Left = ws.Left.Value;
             Top = ws.Top.Value;
+            EnsureOnScreen();
             return;
         }
         var screen = Screen.PrimaryScreen!.WorkingArea;
         Left = (screen.Width - Width) / 2;
         Top = (screen.Height - Height) / 2;
+    }
+
+    private void EnsureOnScreen()
+    {
+        if (double.IsNaN(Width) || double.IsNaN(Height))
+            return;
+
+        var rect = new System.Drawing.Rectangle(
+            (int)Math.Round(Left),
+            (int)Math.Round(Top),
+            (int)Math.Round(Width),
+            (int)Math.Round(Height));
+
+        bool onScreen = Screen.AllScreens
+            .Any(s => rect.IntersectsWith(s.WorkingArea));
+
+        if (!onScreen)
+        {
+            var primary = Screen.PrimaryScreen!.WorkingArea;
+            Left = primary.Left;
+            Top = primary.Top;
+        }
     }
 
     // ── Dock / Undock ───────────────────────────────────────
@@ -306,7 +327,6 @@ public partial class DesktopFolderWidget : Window
         MainWindow.DockManager.Dock(WidgetId, this, edge, thickness);
         HighlightActiveEdge(edge);
         ShowResizeGrip(edge);
-        FloatingResizeGrip.Visibility = Visibility.Collapsed;
     }
 
     private void Undock(bool preservePosition = false)
@@ -340,7 +360,6 @@ public partial class DesktopFolderWidget : Window
         }
         HighlightActiveEdge(DockEdge.None);
         ResizeGrip.Visibility = Visibility.Collapsed;
-        FloatingResizeGrip.Visibility = Visibility.Visible;
     }
 
     // ── Resize grip positioning ─────────────────────────────
@@ -430,42 +449,7 @@ public partial class DesktopFolderWidget : Window
         ((Border)sender).ReleaseMouseCapture();
     }
 
-    private void FloatingResizeGrip_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        if (_isDocked || e.LeftButton != MouseButtonState.Pressed)
-            return;
-
-        _isFloatingResizing = true;
-        _floatingResizeStart = PointToScreen(e.GetPosition(this));
-        _floatingResizeStartWidth = Width;
-        _floatingResizeStartHeight = Height;
-        Mouse.Capture((IInputElement)sender);
-        e.Handled = true;
-    }
-
-    private void FloatingResizeGrip_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        if (!_isFloatingResizing || _isDocked || e.LeftButton != MouseButtonState.Pressed)
-            return;
-
-        var current = PointToScreen(e.GetPosition(this));
-        var dx = current.X - _floatingResizeStart.X;
-        var dy = current.Y - _floatingResizeStart.Y;
-        Width = Math.Max(220, _floatingResizeStartWidth + dx);
-        Height = Math.Max(180, _floatingResizeStartHeight + dy);
-    }
-
-    private void FloatingResizeGrip_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-    {
-        if (!_isFloatingResizing)
-            return;
-
-        _isFloatingResizing = false;
-        Mouse.Capture(null);
-        e.Handled = true;
-    }
-
-    // ── Edge highlighting ───────────────────────────────────
+    // ── Edge highlighting
     private void HighlightActiveEdge(DockEdge edge)
     {
     }
@@ -615,6 +599,11 @@ public partial class DesktopFolderWidget : Window
 
     private void CollapseToMinimize()
     {
+        if (_isExpandedUpward)
+        {
+            Top = _preHoverExpandTop;
+            ResetUpwardExpansion();
+        }
         ContentPanel.Visibility = Visibility.Collapsed;
         UpdateLayout();
         Height = GetMinimizedHeight();
@@ -643,7 +632,29 @@ public partial class DesktopFolderWidget : Window
             return;
 
         _minimizeTimer.Stop();
-        ExpandFromMinimize();
+
+        var expandedHeight = _expandedHeight > 0 ? _expandedHeight : 420;
+        var screen = Screen.FromPoint(new System.Drawing.Point((int)Left, (int)Top)).WorkingArea;
+
+        if (Top + expandedHeight > screen.Bottom)
+        {
+            _preHoverExpandTop = Top;
+            _isExpandedUpward = true;
+
+            Grid.SetRow(HeaderPanel, 1);
+            Grid.SetRow(ContentPanel, 0);
+            InnerLayout.RowDefinitions[0].Height = new GridLength(1, GridUnitType.Star);
+            InnerLayout.RowDefinitions[1].Height = GridLength.Auto;
+            HeaderPanel.Margin = new Thickness(0, 6, 0, 0);
+
+            ContentPanel.Visibility = Visibility.Visible;
+            Height = expandedHeight;
+            Top = Top + GetMinimizedHeight() - expandedHeight;
+        }
+        else
+        {
+            ExpandFromMinimize();
+        }
     }
 
     private void Window_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
@@ -810,7 +821,21 @@ public partial class DesktopFolderWidget : Window
             Undock(true);
 
         DragMove();
+        ResetUpwardExpansion();
         TryAutoDockFromPosition();
+    }
+
+    private void ResetUpwardExpansion()
+    {
+        if (!_isExpandedUpward)
+            return;
+
+        Grid.SetRow(HeaderPanel, 0);
+        Grid.SetRow(ContentPanel, 1);
+        InnerLayout.RowDefinitions[0].Height = GridLength.Auto;
+        InnerLayout.RowDefinitions[1].Height = new GridLength(1, GridUnitType.Star);
+        HeaderPanel.Margin = new Thickness(0, 0, 0, 6);
+        _isExpandedUpward = false;
     }
 }
 

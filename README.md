@@ -3,14 +3,21 @@ Just a simple widget tool I'm working on. It was initially built as a Fences Alt
 
 * Folder Widget: Lets you select a specific folder on your drive and display all the icons in that folder
 * Shortcut Widget: Lets you add specific shortcuts and add arguments to them
-* Title Bar Widget With options to force close the active task or get info about it
-* CPU Monitor Widget: With custom colors
-* RAM Monitor Widget: Also with custom colors
-* Clock Widget: Of course with custom colors
-* Weather Widget: With 1, 3 and 7 day forcasts
-* All Widgets: Has the ability to minimize the view to just the title
+* CPU Widget: Displays the current CPU usage and temperature
+* RAM Widget: Displays the current RAM usage
+* Media Control Widget: Displays the current media playing on your system and allows you to control it
+* Video Widget: Lets you select a video file and play it in the widget
+* Weather Widget: Displays the current weather for a specific location
+* Clock Widget: Displays the current time and date
 * All Widgets: Custom coloring per widget
 
 **To Do**
-* Add more Widgets
+* Add widgets for Network Usage, Disk Usage, and GPU Usage
+* Make this Readme file better and add more screenshots
 * Bug Fixes
+
+### Screenshots
+
+**Clock Widget**
+View the time, now with custom colors
+![Clock Widget](Screenshots/Clock.png)

@@ -147,6 +147,26 @@ public class AppSettings
                     ["WeatherExtremeColor"] = "#FFEF4444"
                 }
             },
+            "VideoBackground" => new WidgetSettings
+            {
+                Kind = "VideoBackground",
+                Topmost = false,
+                Opacity = 1.0,
+                Width = 360,
+                Height = 240,
+                Custom = new()
+                {
+                    ["VideoBackgroundSourcePath"] = string.Empty
+                }
+            },
+            "MediaControl" => new WidgetSettings
+            {
+                Kind = "MediaControl",
+                Topmost = false,
+                Opacity = 1.0,
+                Width = 320,
+                Height = 44
+            },
             _ => new WidgetSettings { Kind = kind }
         };
     }

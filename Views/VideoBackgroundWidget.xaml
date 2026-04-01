@@ -1,10 +1,14 @@
-<Window x:Class="EchoUI.Views.WeatherWidget"
+<Window x:Class="EchoUI.Views.VideoBackgroundWidget"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Weather" Width="280" Height="260"
+        Title="Video Widget" Width="360" Height="240"
+        MinWidth="240" MinHeight="180"
         WindowStyle="None" AllowsTransparency="True"
-        Background="Transparent" Topmost="False"
-        ShowInTaskbar="False" ResizeMode="CanResize">
+        ResizeMode="CanResize"
+        ShowInTaskbar="False"
+        Topmost="False"
+        Background="Transparent"
+        WindowStartupLocation="Manual">
     <WindowChrome.WindowChrome>
         <WindowChrome ResizeBorderThickness="8" CaptionHeight="0" GlassFrameThickness="0" CornerRadius="0"/>
     </WindowChrome.WindowChrome>
@@ -19,10 +23,7 @@
             <Grid Margin="12">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <DockPanel Grid.Row="0" Margin="0,0,0,6">
@@ -32,24 +33,33 @@
                     <Button Content="⚙" Click="BtnSettings_Click" DockPanel.Dock="Right"
                             Background="Transparent" Foreground="{DynamicResource MutedForegroundBrush}" BorderBrush="Transparent"
                             FontSize="14" Padding="4,0" Cursor="Hand" MinWidth="24" ToolTip="Settings"/>
-                    <TextBlock x:Name="TxtLocationTitle" Text="New York City, New York, USA" FontSize="14" FontWeight="Bold"
-                               Foreground="{DynamicResource ForegroundBrush}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="Video Widget" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource ForegroundBrush}"/>
                 </DockPanel>
 
-                <TextBlock x:Name="TxtCurrentTemp" Grid.Row="1" Text="--°C" FontSize="28" FontWeight="SemiBold"
-                           Foreground="{DynamicResource ForegroundBrush}" HorizontalAlignment="Center"/>
-
-                <TextBlock x:Name="TxtCurrentCondition" Grid.Row="2" Text="Loading weather..." Margin="0,4,0,8"
-                           Foreground="{DynamicResource MutedForegroundBrush}" HorizontalAlignment="Center"/>
-
-                <Border Grid.Row="3" Background="{DynamicResource ControlBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                        <StackPanel x:Name="ForecastPanel"/>
-                    </ScrollViewer>
+                <Border Grid.Row="1"
+                        Background="{DynamicResource ControlBackgroundBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        ClipToBounds="True">
+                    <Grid>
+                        <MediaElement x:Name="VideoPlayer"
+                                      Stretch="Fill"
+                                      LoadedBehavior="Manual"
+                                      UnloadedBehavior="Stop"
+                                      MediaEnded="VideoPlayer_MediaEnded"
+                                      MediaFailed="VideoPlayer_MediaFailed"/>
+                        <Image x:Name="GifPlayer" Stretch="Fill" Visibility="Collapsed"/>
+                        <TextBlock x:Name="TxtPlaceholder"
+                                   Text="Select a video or GIF in settings."
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Margin="16"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Center"
+                                   Foreground="{DynamicResource MutedForegroundBrush}"/>
+                    </Grid>
                 </Border>
-
-                <TextBlock x:Name="TxtLastUpdated" Grid.Row="4" Margin="0,8,0,0" FontSize="11"
-                           Foreground="{DynamicResource MutedForegroundBrush}" HorizontalAlignment="Right"/>
             </Grid>
         </Border>
     </Grid>

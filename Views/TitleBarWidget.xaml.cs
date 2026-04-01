@@ -61,7 +61,7 @@ public partial class TitleBarWidget : Window
         return _widgetSettings;
     }
 
-    private void ApplyWidgetSettingsFromModel()
+    public void ApplyWidgetSettingsFromModel()
     {
         var ws = SyncWidgetSettings();
         ThemeHelper.ApplyToElement(this, ws.CustomColors);

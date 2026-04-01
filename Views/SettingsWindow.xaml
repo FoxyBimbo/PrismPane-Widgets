@@ -153,6 +153,8 @@
                             <ComboBoxItem Content="CPU Monitor" Tag="CpuMonitor"/>
                             <ComboBoxItem Content="RAM Monitor" Tag="RamMonitor"/>
                             <ComboBoxItem Content="Weather" Tag="Weather"/>
+                            <ComboBoxItem Content="Video Widget" Tag="VideoBackground"/>
+                            <ComboBoxItem Content="Media Control" Tag="MediaControl"/>
                         </ComboBox>
                     </StackPanel>
 
@@ -447,6 +449,27 @@
                                             ToolTip="Pick color"/>
                                 </StackPanel>
                             </StackPanel>
+
+                            <StackPanel x:Name="PanelVideoBackgroundSettings" Visibility="Collapsed">
+                                <TextBlock Text="Video Widget Options" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource MutedForegroundBrush}" Margin="0,8,0,6"/>
+
+                                <TextBlock Text="Select a video or GIF. Save applies it to the video widget."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource MutedForegroundBrush}"
+                                           Margin="0,0,0,6"/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Source file:" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox x:Name="TxtVideoBackgroundPath" Width="230" Padding="4,2"/>
+                                </StackPanel>
+
+                                <Button Content="Browse..."
+                                        Width="90"
+                                        Padding="8,4"
+                                        Click="BtnBrowseVideoBackground_Click"
+                                        Background="{DynamicResource AccentBrush}" Foreground="White" BorderBrush="Transparent"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -469,6 +492,54 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                </StackPanel>
+
+                <StackPanel x:Name="PanelActiveWidgets" Margin="0,12,0,0">
+                    <TextBlock Text="Active Widgets" FontSize="18" FontWeight="Bold" Margin="0,0,0,8"/>
+                    <Border Background="{DynamicResource ControlBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                            CornerRadius="4" Padding="12">
+                        <Grid>
+                            <ListBox x:Name="LstActiveWidgets"
+                                         MinHeight="120"
+                                         MaxHeight="220"
+                                         Background="Transparent"
+                                         Foreground="{DynamicResource ForegroundBrush}"
+                                         BorderThickness="0"
+                                         MouseDoubleClick="LstActiveWidgets_MouseDoubleClick"
+                                         PreviewMouseRightButtonUp="LstActiveWidgets_PreviewMouseRightButtonUp">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0"/>
+
+                                            <Button Grid.Column="1"
+                                                    Content="X"
+                                                    Width="24"
+                                                    Height="24"
+                                                    Tag="{Binding Id}"
+                                                    Click="BtnCloseActiveWidget_Click"
+                                                    Background="{DynamicResource SecondaryButtonBrush}"
+                                                    Foreground="White"
+                                                    BorderBrush="Transparent"
+                                                    ToolTip="Close widget"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <TextBlock x:Name="TxtNoActiveWidgets"
+                                       Text="No active widgets are open."
+                                       Visibility="Collapsed"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource MutedForegroundBrush}"/>
+                        </Grid>
+                    </Border>
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
