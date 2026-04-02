@@ -250,7 +250,7 @@ public class AppSettings
                 Height = 320,
                 Custom = new()
                 {
-                    ["RssFeedUrl"] = "https://feeds.bbci.co.uk/news/rss.xml",
+                    ["RssFeedUrl"] = "https://www.wired.com/feed/category/science/latest/rss",
                     ["RssMaxItems"] = "15",
                     ["RssRefreshInterval"] = "3",
                     ["RssRefreshUnit"] = "Hours"

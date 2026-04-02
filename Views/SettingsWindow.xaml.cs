@@ -713,7 +713,7 @@ public partial class SettingsWindow : Window
     {
         TxtRssFeedUrl.Text = ws.Custom.TryGetValue(RssFeedUrlKey, out var savedUrl) && !string.IsNullOrWhiteSpace(savedUrl)
             ? savedUrl
-            : "https://feeds.bbci.co.uk/news/rss.xml";
+            : "https://www.wired.com/feed/category/science/latest/rss";
 
         TxtRssMaxItems.Text = ws.Custom.TryGetValue(RssMaxItemsKey, out var savedMax)
             ? savedMax
